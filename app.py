@@ -36,7 +36,7 @@ with tab1:
 
     - 📈 Historical closing prices
     - 🔁 Moving average crossovers with buy/sell signals
-    - 📊 Technical indicators (RSI, MACD)
+    - 📊 Technical indicators (RSI, MACD, etc)
     - 🕯️ Interactive candlestick charts
     - 📥 Downloadable CSV of Raw data
 
@@ -97,7 +97,7 @@ with tab1:
                 data['Position'] = data['Signal'].diff()
 
                 # Show table for stock prices
-                st.markdown("### Stock Data Overview")
+                st.markdown(f"### Stock Data Overview: {ticker}")
                 st.write("""
                 The table below displays the raw historical data for the selected stock(s) over the chosen time range.  
                 It includes key trading metrics like:
@@ -182,6 +182,85 @@ with tab2:
 
     You can choose from options like RSI, MACD, SMA, and EMA to analyze price behavior over time.
     """)
+
+    try:
+        # Show table for stock prices
+                st.markdown(f"### Stock Data Overview: {ticker}")
+                st.write("""
+                The table below displays the raw historical data for the selected stock(s) over the chosen time range.  
+                It includes key trading metrics like:
+
+                - **Open**: Price at the start of the trading day  
+                - **High / Low**: Highest and lowest prices during the day  
+                - **Close**: Final trading price of the day  
+                - **Volume**: Total number of shares traded  
+                - **Dividends & Splits**: Corporate actions (if any)
+
+                """)
+                st.dataframe(data)
+
+                # Plot moving averages graph
+                # Plot with Buy/Sell Signals
+                fig, ax = plt.subplots(figsize=(12, 5))
+                ax.plot(data['Close'], label="Closing Price", color='blue')
+                ax.plot(data['Short_MA'], label=f"{short_window}-Day Short MA", color='orange')
+                ax.plot(data['Long_MA'], label=f"{long_window}-Day Long MA", color='green')
+
+                # Plot Buy Signals (Golden Cross)
+                ax.plot(data[data['Position'] == 1].index,
+                        data['Short_MA'][data['Position'] == 1],
+                        '^', markersize=10, color='green', label='Buy Signal')
+
+                # Plot Sell Signals (Death Cross)
+                ax.plot(data[data['Position'] == -1].index,
+                        data['Short_MA'][data['Position'] == -1],
+                        'v', markersize=10, color='red', label='Sell Signal')
+
+                st.markdown("### Price Chart with Moving Averages & Trading Signals")
+                st.write("""
+                This chart shows the stock's **daily closing price** along with its **short-term and long-term moving averages**.  
+                We also highlight **Buy** and **Sell signals** based on moving average crossovers:
+
+                - ✅ A **Buy Signal** (green ▲) appears when the short MA crosses above the long MA — potential uptrend  
+                - ❌ A **Sell Signal** (red ▼) appears when the short MA crosses below the long MA — possible downtrend
+
+                Use these signals as technical cues, not guaranteed predictors.
+                """)
+
+                ax.set_title("Stock Price with Moving Averages and Buy/Sell Signals")
+                ax.set_xlabel("Date")
+                ax.set_ylabel("Price (USD)")
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
+
+
+                # Stock Analysis
+                try:
+                    with st.expander(" Stock Analysis (Click to Expand)"):
+                        st.write("""
+                        This section summarizes the stock's overall performance during the selected time period.
+                        
+                        - **Highest Price**: The peak price observed
+                        - **Lowest Price**: The lowest recorded trading price
+                        - **Percentage Change**: % gain or loss from start to end
+
+                        Use this for a quick performance snapshot before diving into technical indicators.
+                        """)
+                        
+                        highest_price = data['High'].max()
+                        lowest_price = data['Low'].min()
+                        pct_change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
+
+                        st.write(f"**Highest Price:** ${highest_price:.2f}")
+                        st.write(f"**Lowest Price:** ${lowest_price:.2f}")
+                        st.write(f"**Percentage Change:** {pct_change:.2f}%")
+
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+    except Exception as e:
+                    st.error(f"An error occurred: {e}")
+
 
     # Let user choose which indicators to show
     indicators_selected = st.multiselect(
