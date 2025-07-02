@@ -127,30 +127,35 @@ if tickers:
 
 
             # Stock Analysis
-            with st.expander("📈 Stock Analysis (Click to Expand)"):
-                st.write("""
-                This section summarizes the stock's overall performance during the selected time period.
-                
-                - **Highest Price**: The peak price observed
-                - **Lowest Price**: The lowest recorded trading price
-                - **Percentage Change**: % gain or loss from start to end
+            try:
+                with st.expander("📈 Stock Analysis (Click to Expand)"):
+                    st.write("""
+                    This section summarizes the stock's overall performance during the selected time period.
+                    
+                    - **Highest Price**: The peak price observed
+                    - **Lowest Price**: The lowest recorded trading price
+                    - **Percentage Change**: % gain or loss from start to end
 
-                Use this for a quick performance snapshot before diving into technical indicators.
-                """)
-                
-                highest_price = data['High'].max()
-                lowest_price = data['Low'].min()
-                pct_change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
+                    Use this for a quick performance snapshot before diving into technical indicators.
+                    """)
+                    
+                    highest_price = data['High'].max()
+                    lowest_price = data['Low'].min()
+                    pct_change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
 
-                st.write(f"**Highest Price:** ${highest_price:.2f}")
-                st.write(f"**Lowest Price:** ${lowest_price:.2f}")
-                st.write(f"**Percentage Change:** {pct_change:.2f}%")
+                    st.write(f"**Highest Price:** ${highest_price:.2f}")
+                    st.write(f"**Lowest Price:** ${lowest_price:.2f}")
+                    st.write(f"**Percentage Change:** {pct_change:.2f}%")
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
 
 
 # Technical indicators (RSI, MACD)
 data = data.copy()
 data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
 data['MACD'] = ta.trend.MACD(data['Close']).macd()
+
 
 st.subheader("📊 Technical Indicators")
 st.line_chart(data[['RSI', 'MACD']])
