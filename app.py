@@ -7,6 +7,37 @@ import numpy as np
 import ta
 import plotly.graph_objects as go
 
+# UI
+dark_mode = st.toggle("🌙 Enable Dark Mode")
+
+if dark_mode:
+    st.markdown("""
+        <style>
+            body { background-color: #0e1117; color: white; }
+            .stApp { background-color: #0e1117; color: white; }
+        </style>
+        """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <style>
+            body { background-color: white; color: black; }
+            .stApp { background-color: white; color: black; }
+        </style>
+        """, unsafe_allow_html=True)
+
+tab1, tab2 = st.tabs(["📈 Overview", "📊 Technical Analysis"])
+
+with tab1:
+    st.subheader("Stock Price Overview")
+    # historical price plot code
+
+with tab2:
+    st.subheader("Technical Indicators")
+    # RSI, MACD, SMA, etc.
+
+
+#------------------
+
 st.title(" Multi-Stock Market Visualizer & Analyzer")
 
 st.write("""
