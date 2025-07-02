@@ -111,42 +111,6 @@ with tab1:
                 """)
                 st.dataframe(data)
 
-                # Plot moving averages graph
-                # Plot with Buy/Sell Signals
-                fig, ax = plt.subplots(figsize=(12, 5))
-                ax.plot(data['Close'], label="Closing Price", color='blue')
-                ax.plot(data['Short_MA'], label=f"{short_window}-Day Short MA", color='orange')
-                ax.plot(data['Long_MA'], label=f"{long_window}-Day Long MA", color='green')
-
-                # Plot Buy Signals (Golden Cross)
-                ax.plot(data[data['Position'] == 1].index,
-                        data['Short_MA'][data['Position'] == 1],
-                        '^', markersize=10, color='green', label='Buy Signal')
-
-                # Plot Sell Signals (Death Cross)
-                ax.plot(data[data['Position'] == -1].index,
-                        data['Short_MA'][data['Position'] == -1],
-                        'v', markersize=10, color='red', label='Sell Signal')
-
-                st.markdown("### Price Chart with Moving Averages & Trading Signals")
-                st.write("""
-                This chart shows the stock's **daily closing price** along with its **short-term and long-term moving averages**.  
-                We also highlight **Buy** and **Sell signals** based on moving average crossovers:
-
-                - ✅ A **Buy Signal** (green ▲) appears when the short MA crosses above the long MA — potential uptrend  
-                - ❌ A **Sell Signal** (red ▼) appears when the short MA crosses below the long MA — possible downtrend
-
-                Use these signals as technical cues, not guaranteed predictors.
-                """)
-
-                ax.set_title("Stock Price with Moving Averages and Buy/Sell Signals")
-                ax.set_xlabel("Date")
-                ax.set_ylabel("Price (USD)")
-                ax.legend()
-                ax.grid(True)
-                st.pyplot(fig)
-
-
                 # Stock Analysis
                 try:
                     with st.expander(" Stock Analysis (Click to Expand)"):
@@ -176,33 +140,56 @@ with tab1:
 
 
 with tab2:
-    st.subheader(" Trend & Indicator Analysis")
+    # Let the user choose one ticker to analyze
+    selected_ticker = st.selectbox(
+        "Select a stock to view detailed analysis",
+        list(all_data.keys()),
+        key="section1"
+    )
+    selected_data = all_data[selected_ticker].copy()
 
     st.markdown("### Price Chart with Moving Averages & Trading Signals")
     st.write("""
-            This chart shows the stock's **daily closing price** along with its **short-term and long-term moving averages**.  
-            We also highlight **Buy** and **Sell signals** based on moving average crossovers:
+        This chart shows the stock's **daily closing price** along with its **short-term and long-term moving averages**.  
+        We also highlight **Buy** and **Sell signals** based on moving average crossovers:
 
-            - ✅ A **Buy Signal** (green ▲) appears when the short MA crosses above the long MA — potential uptrend  
-            - ❌ A **Sell Signal** (red ▼) appears when the short MA crosses below the long MA — possible downtrend
+        - ✅ A **Buy Signal** (green ▲) appears when the short MA crosses above the long MA — potential uptrend  
+        - ❌ A **Sell Signal** (red ▼) appears when the short MA crosses below the long MA — possible downtrend
 
-            Use these signals as technical cues, not guaranteed predictors.
-            """)
+        Use these signals as technical cues, not guaranteed predictors.
+    """)
 
-    ax.set_title("Stock Price with Moving Averages and Buy/Sell Signals")
+    # Calculate moving averages
+    selected_data["Short_MA"] = selected_data["Close"].rolling(window=short_window).mean()
+    selected_data["Long_MA"] = selected_data["Close"].rolling(window=long_window).mean()
+
+    # Identify buy/sell signals
+    buy_signals = (selected_data["Short_MA"] > selected_data["Long_MA"]) & \
+                  (selected_data["Short_MA"].shift() <= selected_data["Long_MA"].shift())
+    sell_signals = (selected_data["Short_MA"] < selected_data["Long_MA"]) & \
+                   (selected_data["Short_MA"].shift() >= selected_data["Long_MA"].shift())
+
+    # Plot chart
+    fig, ax = plt.subplots()
+    ax.plot(selected_data.index, selected_data["Close"], label="Close", color="blue")
+    ax.plot(selected_data.index, selected_data["Short_MA"], label=f"{short_window}-Day MA", color="green")
+    ax.plot(selected_data.index, selected_data["Long_MA"], label=f"{long_window}-Day MA", color="red")
+    ax.scatter(selected_data.index[buy_signals], selected_data["Close"][buy_signals], marker="^", color="green", label="Buy Signal")
+    ax.scatter(selected_data.index[sell_signals], selected_data["Close"][sell_signals], marker="v", color="red", label="Sell Signal")
+    ax.set_title(f"{selected_ticker} - Price with Moving Averages & Signals")
     ax.set_xlabel("Date")
     ax.set_ylabel("Price (USD)")
     ax.legend()
     ax.grid(True)
     st.pyplot(fig)
 
+    # Technical Indicators Section
     st.markdown("### Technical Indicator Trends")
     st.write("""
-    This section helps you explore key technical indicators to understand market trends, momentum, and potential reversal points.
-
-    You can choose from options like RSI, MACD, SMA, and EMA to analyze price behavior over time.
+        This section helps you explore key technical indicators to understand market trends, momentum, and potential reversal points.
+        You can choose from options like RSI, MACD, SMA, and EMA to analyze price behavior over time.
     """)
-    # Let user choose which indicators to show
+
     indicators_selected = st.multiselect(
         "Choose Technical Indicators to Display",
         ["RSI", "MACD", "SMA (50)", "SMA (100)", "EMA (20)", "EMA (50)"],
@@ -210,52 +197,42 @@ with tab2:
     )
 
     # Compute selected indicators
-    data = data.copy()
-
     if "RSI" in indicators_selected:
-        data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
-
+        selected_data['RSI'] = ta.momentum.RSIIndicator(selected_data['Close']).rsi()
     if "MACD" in indicators_selected:
-        data['MACD'] = ta.trend.MACD(data['Close']).macd()
-
+        selected_data['MACD'] = ta.trend.MACD(selected_data['Close']).macd()
     if "SMA (50)" in indicators_selected:
-        data['SMA (50)'] = data['Close'].rolling(window=50).mean()
-
+        selected_data['SMA (50)'] = selected_data['Close'].rolling(window=50).mean()
     if "SMA (100)" in indicators_selected:
-        data['SMA (100)'] = data['Close'].rolling(window=100).mean()
-
+        selected_data['SMA (100)'] = selected_data['Close'].rolling(window=100).mean()
     if "EMA (20)" in indicators_selected:
-        data['EMA (20)'] = data['Close'].ewm(span=20, adjust=False).mean()
-
+        selected_data['EMA (20)'] = selected_data['Close'].ewm(span=20, adjust=False).mean()
     if "EMA (50)" in indicators_selected:
-        data['EMA (50)'] = data['Close'].ewm(span=50, adjust=False).mean()
+        selected_data['EMA (50)'] = selected_data['Close'].ewm(span=50, adjust=False).mean()
 
-    # Filter only selected columns that exist in the dataframe
-    plot_cols = [col for col in indicators_selected if col in data.columns]
-
-    # Display line chart
+    plot_cols = [col for col in indicators_selected if col in selected_data.columns]
     if plot_cols:
-        st.line_chart(data[plot_cols])
+        st.line_chart(selected_data[plot_cols])
     else:
         st.warning("Please select at least one indicator to visualize.")
 
-    # Optional: Add explanation for each technical indicator 
-    with st.expander(" Indicator Descriptions (Click to Expand)"):
+    with st.expander("Indicator Descriptions (Click to Expand)"):
         st.markdown("""
         - **RSI (Relative Strength Index)**:  
-        Identifies overbought (>70) or oversold (<30) conditions in the market.
+          Identifies overbought (>70) or oversold (<30) conditions.
 
         - **MACD (Moving Average Convergence Divergence)**:  
-        Tracks momentum shifts through short- and long-term moving averages.
+          Detects trend momentum based on two EMAs.
 
         - **SMA (Simple Moving Average)**:  
-        Smooths out price data by averaging over a defined period (e.g., 50, 100 days).
+          Smooths out prices over a period (e.g., 50, 100 days).
 
         - **EMA (Exponential Moving Average)**:  
-        Like SMA but gives more weight to recent prices, making it more responsive.
-
-        These indicators help detect trend strength, reversals, and potential entry/exit signals.
+          Like SMA but reacts faster to recent prices.
         """)
+
+
+
 
 
 with tab3:
@@ -281,6 +258,11 @@ with tab3:
 
     # Render the candlestick chart
     st.plotly_chart(fig_candle)
+
+
+
+
+
 
 
 # download the data
