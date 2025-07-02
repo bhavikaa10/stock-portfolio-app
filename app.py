@@ -25,7 +25,7 @@ else:
         </style>
         """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs([" Overview", " Technical Analysis", " Candlestick", "Downloads"])
+tab1, tab2, tab3, tab4 = st.tabs([" Overview", " Technical Analysis", " Candlestick chart", "Downloads"])
 
 with tab1:
     st.title(" Multi-Stock Market Visualizer & Analyzer")
@@ -264,14 +264,28 @@ with tab3:
     st.plotly_chart(fig_candle)
 
 
+# download the data
+with tab4: 
+    st.subheader("📥 Download Your Data")
 
-with tab4:
-    #download the csv
+    st.write("""
+    Export your selected stock's historical data for further analysis, reporting, or personal records.  
+    This includes:
+    
+    - **OHLC (Open, High, Low, Close)** prices  
+    - **Volume**  
+    - **Moving Averages (if selected)**  
+    - **Technical Indicators (RSI, MACD, etc.)**  
+    
+    Data is formatted as a `.csv` file and encoded in UTF-8 for maximum compatibility.
+    """)
+
     csv = data.to_csv().encode('utf-8')
     st.download_button(
-        "Download CSV",
+        "⬇️ Download CSV",
         csv,
         "stock_data.csv",
         "text/csv",
         key='download-csv'
     )
+
