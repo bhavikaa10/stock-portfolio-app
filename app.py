@@ -228,8 +228,23 @@ fig_candle = go.Figure(data=[go.Candlestick(
     low=data['Low'],
     close=data['Close']
 )])
-st.subheader("📊 Candlestick Chart")
+st.subheader("Candlestick Chart")
+
+st.markdown("""
+This candlestick chart shows daily price action with:
+
+- 🟩 **Green candles**: Closing price is higher than opening → bullish
+- 🟥 **Red candles**: Closing price is lower than opening → bearish
+- **Wicks**: Represent the intraday high and low
+
+Use this chart to analyze price trends, market sentiment, and volatility.
+""")
+
+# Render the candlestick chart
 st.plotly_chart(fig_candle)
+
+
+
 
 #download the csv
 csv = data.to_csv().encode('utf-8')
