@@ -113,6 +113,7 @@ with tab1:
                 st.error(f"❌ Error during analysis: {e}")
 
 
+#technical overview
 with tab2:
     # Let the user choose one ticker to analyze
     selected_ticker = st.selectbox(
@@ -155,6 +156,7 @@ with tab2:
     ax.set_ylabel("Price (USD)")
     ax.legend()
     ax.grid(True)
+    fig.autofmt_xdate()
     st.pyplot(fig)
 
     # Technical Indicators Section
@@ -208,30 +210,54 @@ with tab2:
 
 
 
-
+# candle stick
 with tab3:
-    #candle stick chart
-    fig_candle = go.Figure(data=[go.Candlestick(
-        x=data.index,
-        open=data['Open'],
-        high=data['High'],
-        low=data['Low'],
-        close=data['Close']
-    )])
     st.subheader("Candlestick Chart")
 
-    st.markdown("""
-    This candlestick chart shows daily price action with:
+    # Let user choose one stock
+    selected_ticker_candle = st.selectbox(
+        "Select a stock to view candlestick chart",
+        list(all_data.keys()),
+        key="candle_tab"
+    )
 
-    - 🟩 **Green candles**: Closing price is higher than opening → bullish
-    - 🟥 **Red candles**: Closing price is lower than opening → bearish
-    - **Wicks**: Represent the intraday high and low
+    # Fetch fresh OHLCV data for candlestick chart
+    candle_data = yf.Ticker(selected_ticker_candle).history(start=start_date, end=end_date)
 
-    Use this chart to analyze price trends, market sentiment, and volatility.
-    """)
+    if candle_data.empty:
+        st.warning(f"No data available for {selected_ticker_candle}")
+    else:
+        candle_data.reset_index(inplace=True)
 
-    # Render the candlestick chart
-    st.plotly_chart(fig_candle)
+        st.markdown("""
+        This candlestick chart shows daily price action with:
+
+        - 🟩 **Green candles**: Closing price is higher than opening → bullish  
+        - 🟥 **Red candles**: Closing price is lower than opening → bearish  
+        - **Wicks**: Represent the intraday high and low  
+
+        Use this chart to analyze price trends, market sentiment, and volatility.
+        """)
+
+        # Plot candlestick chart
+        fig_candle = go.Figure(data=[go.Candlestick(
+            x=candle_data['Date'],
+            open=candle_data['Open'],
+            high=candle_data['High'],
+            low=candle_data['Low'],
+            close=candle_data['Close'],
+            increasing_line_color='green',
+            decreasing_line_color='red'
+        )])
+
+        fig_candle.update_layout(
+            title=f"{selected_ticker_candle} - Candlestick Chart",
+            xaxis_title="Date",
+            yaxis_title="Price (USD)",
+            xaxis_rangeslider_visible=False
+        )
+
+        st.plotly_chart(fig_candle, use_container_width=True)
 
 
 
@@ -240,27 +266,40 @@ with tab3:
 
 
 # download the data
-with tab4: 
+with tab4:
     st.subheader("📥 Download Your Data")
 
     st.write("""
     Export your selected stock's historical data for further analysis, reporting, or personal records.  
     This includes:
-    
+
     - **OHLC (Open, High, Low, Close)** prices  
     - **Volume**  
     - **Moving Averages (if selected)**  
-    - **Technical Indicators (RSI, MACD, etc.)**  
-    
+    - **Technical Indicators (RSI, MACD, etc.)**
+
     Data is formatted as a `.csv` file and encoded in UTF-8 for maximum compatibility.
     """)
 
-    csv = data.to_csv().encode('utf-8')
-    st.download_button(
-        "⬇️ Download CSV",
-        csv,
-        "stock_data.csv",
-        "text/csv",
-        key='download-csv'
+    # Let user select a stock to download
+    selected_ticker_download = st.selectbox(
+        "Choose a stock to export",
+        list(all_data.keys()),
+        key="download_tab"
     )
+
+    data_to_download = all_data[selected_ticker_download].copy()
+
+    # Preview
+    st.markdown("##### Preview of Data to be Downloaded")
+    st.dataframe(data_to_download.head())
+
+    # Download
+    st.download_button(
+        label="Download CSV",
+        data=data_to_download.to_csv().encode("utf-8"),
+        file_name=f"{selected_ticker_download}_data.csv",
+        mime="text/csv"
+    )
+
 
