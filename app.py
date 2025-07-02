@@ -13,7 +13,7 @@ This is a stock price tracker for global markets.
 Enter a stock ticker symbol (e.g., AAPL, MSFT, TSLA) and select a time period to view historical stock data and moving averages.
 """)
 
-ticker = st.text_input("Enter Stock Ticker (e.g., AAPL, TCS.NS)", "AAPL")
+tickers = st.text_input("Enter Ticker Symbols (comma-separated, e.g., AAPL, MSFT, TSLA)", "AAPL, MSFT")
 start_date, end_date = st.date_input(
     "Select Date Range",
     value=(datetime.date(2024, 1, 1), datetime.date.today())
@@ -22,7 +22,28 @@ start_date, end_date = st.date_input(
 short_window = st.slider("Short-Term MA (days)", min_value=2, max_value=50, value=10)
 long_window = st.slider("Long-Term MA (days)", min_value=10, max_value=200, value=30)
 
-if ticker:
+if tickers:
+    tickers = [t.strip().upper() for t in tickers.split(",")]
+    all_data = {}
+
+    for symbol in tickers:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(start=start_date, end=end_date)
+        if hist.empty:
+            st.warning(f"⚠️ No data found for {symbol}")
+        else:
+            hist = hist[['Close']].rename(columns={'Close': symbol})
+            all_data[symbol] = hist
+
+    if all_data:
+        merged_df = pd.concat(all_data.values(), axis=1)
+        st.subheader("📊 Multi-Stock Closing Price Comparison")
+        st.line_chart(merged_df)
+
+
+if tickers:
+    ticker = tickers[0]  # Use the first stock for detailed analysis
+
     try:
         stock = yf.Ticker(ticker)
         data = stock.history(start=start_date, end=end_date)
