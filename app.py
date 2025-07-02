@@ -107,7 +107,7 @@ if tickers:
                     data['Short_MA'][data['Position'] == -1],
                     'v', markersize=10, color='red', label='Sell Signal')
 
-            st.markdown("### 📉 Price Chart with Moving Averages & Trading Signals")
+            st.markdown("### Price Chart with Moving Averages & Trading Signals")
             st.write("""
             This chart shows the stock's **daily closing price** along with its **short-term and long-term moving averages**.  
             We also highlight **Buy** and **Sell signals** based on moving average crossovers:
@@ -128,7 +128,7 @@ if tickers:
 
             # Stock Analysis
             try:
-                with st.expander("📈 Stock Analysis (Click to Expand)"):
+                with st.expander(" Stock Analysis (Click to Expand)"):
                     st.write("""
                     This section summarizes the stock's overall performance during the selected time period.
                     
@@ -153,14 +153,72 @@ if tickers:
                 st.error(f"An error occurred: {e}")
 
 
-# Technical indicators (RSI, MACD)
+# --- Technical Indicators Section ---
+
+st.subheader(" Technical Indicators")
+st.write("""
+This section helps you explore key technical indicators to understand market trends, momentum, and potential reversal points.
+
+You can choose from options like RSI, MACD, SMA, and EMA to analyze price behavior over time.
+""")
+
+# Let user choose which indicators to show
+indicators_selected = st.multiselect(
+    "Choose Technical Indicators to Display",
+    ["RSI", "MACD", "SMA (50)", "SMA (100)", "EMA (20)", "EMA (50)"],
+    default=["RSI", "MACD"]
+)
+
+# Compute selected indicators
 data = data.copy()
-data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
-data['MACD'] = ta.trend.MACD(data['Close']).macd()
+
+if "RSI" in indicators_selected:
+    data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
+
+if "MACD" in indicators_selected:
+    data['MACD'] = ta.trend.MACD(data['Close']).macd()
+
+if "SMA (50)" in indicators_selected:
+    data['SMA (50)'] = data['Close'].rolling(window=50).mean()
+
+if "SMA (100)" in indicators_selected:
+    data['SMA (100)'] = data['Close'].rolling(window=100).mean()
+
+if "EMA (20)" in indicators_selected:
+    data['EMA (20)'] = data['Close'].ewm(span=20, adjust=False).mean()
+
+if "EMA (50)" in indicators_selected:
+    data['EMA (50)'] = data['Close'].ewm(span=50, adjust=False).mean()
+
+# Filter only selected columns that exist in the dataframe
+plot_cols = [col for col in indicators_selected if col in data.columns]
+
+# Display line chart
+if plot_cols:
+    st.line_chart(data[plot_cols])
+else:
+    st.warning("Please select at least one indicator to visualize.")
+
+# Optional: Add explanation for each technical indicator 
+with st.expander(" Indicator Descriptions (Click to Expand)"):
+    st.markdown("""
+    - **RSI (Relative Strength Index)**:  
+    Identifies overbought (>70) or oversold (<30) conditions in the market.
+
+    - **MACD (Moving Average Convergence Divergence)**:  
+    Tracks momentum shifts through short- and long-term moving averages.
+
+    - **SMA (Simple Moving Average)**:  
+    Smooths out price data by averaging over a defined period (e.g., 50, 100 days).
+
+    - **EMA (Exponential Moving Average)**:  
+    Like SMA but gives more weight to recent prices, making it more responsive.
+
+    These indicators help detect trend strength, reversals, and potential entry/exit signals.
+    """)
 
 
-st.subheader("📊 Technical Indicators")
-st.line_chart(data[['RSI', 'MACD']])
+
 
 #candle stick chart
 fig_candle = go.Figure(data=[go.Candlestick(
