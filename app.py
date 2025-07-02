@@ -28,34 +28,35 @@ else:
 tab1, tab2, tab3, tab4 = st.tabs([" Overview", " Trend & Indicator Analysis", " Candlestick chart", "Downloads"])
 
 with tab1:
-    st.title(" Multi-Stock Market Visualizer & Analyzer")
+    st.title("📊 Multi-Stock Market Visualizer & Analyzer")
 
     st.write("""
     Welcome to your all-in-one dashboard for tracking and comparing global stocks.  
     Simply enter one or more ticker symbols (e.g., **AAPL, MSFT, TSLA**), pick a time range, and explore:
 
-    - 📈 Historical closing prices
-    - 🔁 Moving average crossovers with buy/sell signals
-    - 📊 Technical indicators (RSI, MACD, etc)
-    - 🕯️ Interactive candlestick charts
-    - 📥 Downloadable CSV of Raw data
+    - 📈 Historical closing prices  
+    - 🔁 Moving average crossovers with buy/sell signals  
+    - 📊 Technical indicators (RSI, MACD, etc)  
+    - 🕯️ Interactive candlestick charts  
+    - 📥 Downloadable CSV of Raw data  
 
     Ideal for retail investors, students, and market enthusiasts.
     """)
 
-
-    tickers = st.text_input("Enter Ticker Symbols (comma-separated, e.g., AAPL, MSFT, TSLA)", "AAPL, MSFT")
+    # --- Ticker input and date range ---
+    tickers_input = st.text_input("Enter Ticker Symbols (comma-separated)", "AAPL, MSFT")
     start_date, end_date = st.date_input(
         "Select Date Range",
         value=(datetime.date(2024, 1, 1), datetime.date.today())
     )
 
-    # Slider to choose the moving averages window
+    # --- Moving Average sliders ---
     short_window = st.slider("Short-Term MA (days)", min_value=2, max_value=50, value=10)
     long_window = st.slider("Long-Term MA (days)", min_value=10, max_value=200, value=30)
 
-    if tickers:
-        tickers = [t.strip().upper() for t in tickers.split(",")]
+    # --- Fetch data for all tickers ---
+    if tickers_input:
+        tickers = [t.strip().upper() for t in tickers_input.split(",")]
         all_data = {}
 
         for symbol in tickers:
@@ -64,78 +65,52 @@ with tab1:
             if hist.empty:
                 st.warning(f"⚠️ No data found for {symbol}")
             else:
-                hist = hist[['Close']].rename(columns={'Close': symbol})
-                all_data[symbol] = hist
+                all_data[symbol] = hist  # Full data, including OHLC
 
+        # --- Multi-stock closing price chart ---
         if all_data:
-            merged_df = pd.concat(all_data.values(), axis=1)
-            st.subheader("📊 Multi-Stock Closing Price Comparison")
-            st.line_chart(merged_df)
+            close_df = pd.concat([df['Close'].rename(sym) for sym, df in all_data.items()], axis=1)
+            st.subheader("📉 Multi-Stock Closing Price Comparison")
+            st.line_chart(close_df)
 
+        # --- Single stock selection for detailed view ---
+        if all_data:
+            selected_ticker = st.selectbox("Select a stock to view detailed analysis:", list(all_data.keys()))
+            data = all_data[selected_ticker].copy()
 
-    if tickers:
-        ticker = tickers[0]  # Use the first stock for detailed analysis
+            st.markdown(f"### 📋 Stock Data Overview: {selected_ticker}")
+            st.write("""
+            The table below displays the raw historical data for the selected stock over the chosen time range.  
+            It includes key trading metrics like:
 
-        try:
-            stock = yf.Ticker(ticker)
-            data = stock.history(start=start_date, end=end_date)
+            - **Open**: Price at the start of the trading day  
+            - **High / Low**: Highest and lowest prices during the day  
+            - **Close**: Final trading price of the day  
+            - **Volume**: Total number of shares traded  
+            - **Dividends & Splits**: Corporate actions (if any)
+            """)
+            st.dataframe(data)
 
-            if data.empty:
-                st.warning("⚠️ No data available. Try a different symbol or period.")
-            if start_date >= end_date:
-                st.error("Start date must be before end date.")
-            else:
-                # Calculate Moving averages
-                data = stock.history(start=start_date, end=end_date)
+            # --- Analysis + Moving Average Crossovers ---
+            try:
                 data['Short_MA'] = data['Close'].rolling(window=short_window).mean()
                 data['Long_MA'] = data['Close'].rolling(window=long_window).mean()
-
-                data['Signal'] = 0  # default: no signal
+                data['Signal'] = 0
                 data['Signal'][short_window:] = np.where(
                     data['Short_MA'][short_window:] > data['Long_MA'][short_window:], 1, 0
                 )
                 data['Position'] = data['Signal'].diff()
 
-                # Show table for stock prices
-                st.markdown(f"### Stock Data Overview: {ticker}")
-                st.write("""
-                The table below displays the raw historical data for the selected stock(s) over the chosen time range.  
-                It includes key trading metrics like:
+                with st.expander("📊 Stock Analysis (Click to Expand)"):
+                    highest_price = data['High'].max()
+                    lowest_price = data['Low'].min()
+                    pct_change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
 
-                - **Open**: Price at the start of the trading day  
-                - **High / Low**: Highest and lowest prices during the day  
-                - **Close**: Final trading price of the day  
-                - **Volume**: Total number of shares traded  
-                - **Dividends & Splits**: Corporate actions (if any)
-
-                """)
-                st.dataframe(data)
-
-                # Stock Analysis
-                try:
-                    with st.expander(" Stock Analysis (Click to Expand)"):
-                        st.write("""
-                        This section summarizes the stock's overall performance during the selected time period.
-                        
-                        - **Highest Price**: The peak price observed
-                        - **Lowest Price**: The lowest recorded trading price
-                        - **Percentage Change**: % gain or loss from start to end
-
-                        Use this for a quick performance snapshot before diving into technical indicators.
-                        """)
-                        
-                        highest_price = data['High'].max()
-                        lowest_price = data['Low'].min()
-                        pct_change = ((data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]) * 100
-
-                        st.write(f"**Highest Price:** ${highest_price:.2f}")
-                        st.write(f"**Lowest Price:** ${lowest_price:.2f}")
-                        st.write(f"**Percentage Change:** {pct_change:.2f}%")
-
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
-        except Exception as e:
-                    st.error(f"An error occurred: {e}")
+                    st.write(f"**Highest Price:** ${highest_price:.2f}")
+                    st.write(f"**Lowest Price:** ${lowest_price:.2f}")
+                    st.write(f"**Percentage Change:** {pct_change:.2f}%")
+            except Exception as e:
+                st.error(f"❌ Error during analysis: {e}")
 
 
 with tab2:
