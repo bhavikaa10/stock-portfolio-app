@@ -149,6 +149,8 @@ if tickers:
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+    except Exception as e:
+                st.error(f"An error occurred: {e}")
 
 
 # Technical indicators (RSI, MACD)
