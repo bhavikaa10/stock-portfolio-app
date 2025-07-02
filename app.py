@@ -138,7 +138,6 @@ with tab1:
                     st.error(f"An error occurred: {e}")
 
 
-
 with tab2:
     # Let the user choose one ticker to analyze
     selected_ticker = st.selectbox(
