@@ -28,7 +28,7 @@ else:
 tab1, tab2, tab3, tab4 = st.tabs([" Overview", " Trend & Indicator Analysis", " Candlestick chart", "Downloads"])
 
 with tab1:
-    st.title("📊 Multi-Stock Market Visualizer & Analyzer")
+    st.title("FinSight; Multi-Stock Market Visualizer & Analyzer")
 
     st.write("""
     Welcome to your all-in-one dashboard for tracking and comparing global stocks.  
